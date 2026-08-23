@@ -174,33 +174,40 @@
             status.innerText = "Consultando con ApisPeru...";
             status.style.color = "#d97706";
 
+            // Limpiar campos mientras consulta
+            txtNombres.value = "";
+            txtPaterno.value = "";
+            txtMaterno.value = "";
+
             try {
-                let url = "";
-                if (dni.length === 8) {
-                    url = `https://dniruc.apisperu.com/api/v1/dni/${dni}?token=${TOKEN_APISPERU}`;
-                } else {
-                    url = `https://dniruc.apisperu.com/api/v1/ruc/${dni}?token=${TOKEN_APISPERU}`;
-                }
+                let url = dni.length === 8 
+                    ? `https://dniruc.apisperu.com/api/v1/dni/${dni}?token=${TOKEN_APISPERU}`
+                    : `https://dniruc.apisperu.com/api/v1/ruc/${dni}?token=${TOKEN_APISPERU}`;
 
                 const response = await fetch(url);
-                if (!response.ok) throw new Error("No se encontraron datos");
-                
                 const data = await response.json();
 
+                console.log("Respuesta API:", data); // Para revisar en F12 si fuera necesario
+
+                if (!response.ok || data.message || data.error) {
+                    throw new Error(data.message || "No se encontraron datos");
+                }
+
                 if (dni.length === 8) {
-                    txtNombres.value = data.nombres || "";
-                    txtPaterno.value = data.apellidoPaterno || "";
-                    txtMaterno.value = data.apellidoMaterno || "";
+                    txtNombres.value = data.nombres || data.name || "";
+                    txtPaterno.value = data.apellidoPaterno || data.first_name || "";
+                    txtMaterno.value = data.apellidoMaterno || data.last_name || "";
                 } else {
-                    txtNombres.value = data.razonSocial || "";
+                    txtNombres.value = data.razonSocial || data.razon_social || "";
                     txtPaterno.value = "";
                     txtMaterno.value = "";
                 }
 
-                status.innerText = "¡Datos obtenidos exitosamente!";
+                status.innerText = "¡Datos obtenidos y rellenados automáticamente!";
                 status.style.color = "#10b981";
             } catch (error) {
-                status.innerText = "Error al consultar. Verifique el número o complete manualmente.";
+                console.error(error);
+                status.innerText = "No se pudo autocompletar. Puedes ingresarlo manualmente.";
                 status.style.color = "#dc2626";
             }
         }

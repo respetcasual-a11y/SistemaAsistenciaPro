@@ -1,0 +1,540 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Sistema Asistencia</title>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            background: var(--card-bg);
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        header h1 {
+            font-size: 22px;
+            color: var(--text-main);
+        }
+
+        header p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .clock {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            background: #e0e7ff;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        /* Botones de Navegación / Submódulos */
+        .nav-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        /* Contenido de Submódulos */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card-box {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .card-header-title {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Formulario Submódulo Nuevo Colaborador */
+        .form-grid {
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            grid-column: span 2;
+        }
+
+        .form-group.half {
+            grid-column: span 1;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-action:hover {
+            background: var(--primary-hover);
+        }
+
+        .api-btn {
+            background: #0f172a;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .api-btn:hover {
+            background: #1e293b;
+        }
+
+        /* Tablas generales */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f1f5f9;
+            padding: 14px 20px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Cabecera -->
+        <header>
+            <div>
+                <h1>Panel de Administración y Control</h1>
+                <p>Supervise accesos, gestione personal con API RENIEC/SUNAT.</p>
+            </div>
+            <div class="clock" id="reloj">00:00:00</div>
+        </header>
+
+        <!-- Navegación de Submódulos -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="cambiarTab('historial', event)">
+                <i class="fa-solid fa-list-check"></i> Historial de Accesos
+            </button>
+            <button class="tab-btn" onclick="cambiarTab('empleados', event)">
+                <i class="fa-solid fa-users"></i> Base de Empleados
+            </button>
+            <button class="tab-btn" onclick="cambiarTab('nuevo', event)">
+                <i class="fa-solid fa-user-plus"></i> Registrar Colaborador (API)
+            </button>
+        </div>
+
+        <!-- SUBMÓDULO 1: Historial de Accesos -->
+        <div id="tab-historial" class="tab-content active">
+            <div class="card-box">
+                <div class="card-header-title">
+                    <span>Registro de Ingresos Capturados</span>
+                    <span class="badge" id="contadorRegistros">0 Registros</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>DNI / CÓDIGO</th>
+                            <th>COLABORADOR</th>
+                            <th>FECHA</th>
+                            <th>HORA DE INGRESO</th>
+                            <th>ESTADO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaHistorial">
+                        <!-- Se llena por JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SUBMÓDULO 2: Base de Empleados -->
+        <div id="tab-empleados" class="tab-content">
+            <div class="card-box">
+                <div class="card-header-title">
+                    <span>Colaboradores Registrados</span>
+                    <span class="badge" id="contadorEmpleados">0 Colaboradores</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>DNI / RUC</th>
+                            <th>NOMBRE / RAZÓN SOCIAL</th>
+                            <th>TARIFA POR HORA (S/.)</th>
+                            <th>ACCIÓN</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaEmpleados">
+                        <!-- Se llena por JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SUBMÓDULO 3: Registrar Colaborador con API RENIEC / SUNAT -->
+        <div id="tab-nuevo" class="tab-content">
+            <div class="card-box">
+                <div class="card-header-title">
+                    <span><i class="fa-solid fa-id-card"></i> Nuevo Submódulo: Registro Inteligente (API DNI / RUC)</span>
+                </div>
+                <div class="form-grid">
+                    
+                    <!-- Input DNI o RUC con botón de consulta -->
+                    <div class="form-group">
+                        <label>Número de Documento (8 dígitos DNI ó 11 dígitos RUC):</label>
+                        <div style="display: flex; gap: 12px;">
+                            <input type="text" id="nuevoDni" placeholder="Ej. 70123456" maxlength="11" style="flex: 1;">
+                            <button type="button" class="api-btn" onclick="consultarApiIdentidad()">
+                                <i class="fa-solid fa-magnifying-glass"></i> Consultar API
+                            </button>
+                        </div>
+                        <span id="apiStatus" style="font-size: 12px; color: var(--text-muted);">Ingrese el número y haga clic en Consultar para autocompletar nombre o razón social.</span>
+                    </div>
+
+                    <!-- Nombre o Razón Social -->
+                    <div class="form-group">
+                        <label>Nombre Completo / Razón Social:</label>
+                        <input type="text" id="nuevoNombre" placeholder="Se completará de forma automática">
+                    </div>
+
+                    <!-- Tarifa por Hora -->
+                    <div class="form-group half">
+                        <label>Tarifa por Hora (S/.):</label>
+                        <input type="number" id="nuevaTarifa" value="10.00" step="0.50">
+                    </div>
+
+                    <!-- Botón Guardar -->
+                    <div class="form-group" style="margin-top: 10px;">
+                        <button class="btn-action" onclick="guardarNuevoColaborador()">
+                            <i class="fa-solid fa-floppy-disk"></i> Registrar y Guardar en Base de Datos
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Reloj en tiempo real
+        setInterval(() => {
+            const ahora = new Date();
+            document.getElementById("reloj").innerText = ahora.toLocaleTimeString();
+        }, 1000);
+
+        // Control de Pestañas / Submódulos
+        function cambiarTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            actualizarTablas();
+        }
+
+        // Gestión de LocalStorage
+        function obtenerRegistros() {
+            return JSON.parse(localStorage.getItem("registrosAsistencia")) || [];
+        }
+
+        function obtenerEmpleados() {
+            return JSON.parse(localStorage.getItem("empleadosDb")) || {
+                "70123456": { nombre: "Juan Pérez (Ejemplo)", tarifa: 10.00 }
+            };
+        }
+
+        function guardarEmpleadosDb(empleados) {
+            localStorage.setItem("empleadosDb", JSON.stringify(empleados));
+        }
+
+        // Consulta de API Pública (RENIEC / SUNAT)
+        async function consultarApiIdentidad() {
+            const documento = document.getElementById("nuevoDni").value.trim();
+            const statusLabel = document.getElementById("apiStatus");
+            const inputNombre = document.getElementById("nuevoNombre");
+
+            if (!documento) {
+                alert("Por favor ingrese un número de DNI o RUC.");
+                return;
+            }
+
+            statusLabel.innerText = "Consultando servidores de RENIEC / SUNAT...";
+            statusLabel.style.color = "#d97706";
+
+            try {
+                let url = "";
+                if (documento.length === 8) {
+                    url = `https://api.apis.net.pe/v1/dni?numero=${documento}`;
+                } else if (documento.length === 11) {
+                    url = `https://api.apis.net.pe/v1/ruc?numero=${documento}`;
+                } else {
+                    alert("El documento debe ser un DNI de 8 dígitos o un RUC de 11 dígitos.");
+                    statusLabel.innerText = "Verifique la cantidad de dígitos.";
+                    statusLabel.style.color = "#dc2626";
+                    return;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("No se pudo obtener respuesta del servicio.");
+
+                const data = await response.json();
+
+                if (documento.length === 8) {
+                    const nombreCompleto = data.nombre || `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim();
+                    if (nombreCompleto) {
+                        inputNombre.value = nombreCompleto;
+                        statusLabel.innerText = "¡Datos obtenidos con éxito desde RENIEC!";
+                        statusLabel.style.color = "var(--success)";
+                    } else {
+                        throw new Error("No encontrado");
+                    }
+                } else {
+                    const razonSocial = data.nombre || data.razonSocial;
+                    if (razonSocial) {
+                        inputNombre.value = razonSocial;
+                        statusLabel.innerText = "¡Datos obtenidos con éxito desde SUNAT!";
+                        statusLabel.style.color = "var(--success)";
+                    } else {
+                        throw new Error("No encontrado");
+                    }
+                }
+            } catch (error) {
+                console.warn("API externa con restricción de red o CORS. Habilitando ingreso manual libre.", error);
+                statusLabel.innerText = "Consulta automática no disponible en red local. Escriba el nombre manualmente.";
+                statusLabel.style.color = "#dc2626";
+                inputNombre.focus();
+            }
+        }
+
+        // Guardar Colaborador
+        function guardarNuevoColaborador() {
+            const dni = document.getElementById("nuevoDni").value.trim();
+            const nombre = document.getElementById("nuevoNombre").value.trim();
+            const tarifa = parseFloat(document.getElementById("nuevaTarifa").value) || 10.00;
+
+            if (!dni || !nombre) {
+                alert("Complete el documento y asegúrese de que el nombre o razón social esté lleno.");
+                return;
+            }
+
+            let empleados = obtenerEmpleados();
+            empleados[dni] = { nombre: nombre, tarifa: tarifa };
+            guardarEmpleadosDb(empleados);
+
+            // Limpiar inputs
+            document.getElementById("nuevoDni").value = "";
+            document.getElementById("nuevoNombre").value = "";
+            document.getElementById("nuevaTarifa").value = "10.00";
+            document.getElementById("apiStatus").innerText = "Ingrese el número y haga clic en Consultar para autocompletar nombre o razón social.";
+            document.getElementById("apiStatus").style.color = "var(--text-muted)";
+
+            actualizarTablas();
+            alert("¡Colaborador registrado exitosamente!");
+            
+            // Cambiar a la pestaña de empleados para visualizarlo
+            document.querySelectorAll('.tab-btn')[1].click();
+        }
+
+        // Eliminar Colaborador
+        function eliminarColaborador(dni) {
+            if (confirm("¿Está seguro de eliminar al colaborador con documento " + dni + "?")) {
+                let empleados = obtenerEmpleados();
+                delete empleados[dni];
+                guardarEmpleadosDb(empleados);
+                actualizarTablas();
+            }
+        }
+
+        // Actualizar Tablas en Pantalla
+        function actualizarTablas() {
+            // Historial
+            const tbodyH = document.getElementById("tablaHistorial");
+            const registros = obtenerRegistros();
+            document.getElementById("contadorRegistros").innerText = registros.length + " Registros";
+            tbodyH.innerHTML = "";
+            
+            if (registros.length === 0) {
+                tbodyH.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">No hay registros de accesos recientes.</td></tr>`;
+            } else {
+                registros.forEach(r => {
+                    tbodyH.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600; color: var(--primary);">${r.dni}</td>
+                            <td>${r.nombre}</td>
+                            <td>${r.fecha}</td>
+                            <td>${r.hora}</td>
+                            <td><span class="badge"><i class="fa-solid fa-check"></i> ${r.estado || 'Ingreso'}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Empleados
+            const tbodyE = document.getElementById("tablaEmpleados");
+            const empleados = obtenerEmpleados();
+            const llaves = Object.keys(empleados);
+            document.getElementById("contadorEmpleados").innerText = llaves.length + " Colaboradores";
+            tbodyE.innerHTML = "";
+
+            if (llaves.length === 0) {
+                tbodyE.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">No hay colaboradores registrados.</td></tr>`;
+            } else {
+                llaves.forEach(dni => {
+                    const emp = empleados[dni];
+                    tbodyE.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600; color: var(--primary);">${dni}</td>
+                            <td>${emp.nombre}</td>
+                            <td>S/. ${Number(emp.tarifa).toFixed(2)}</td>
+                            <td>
+                                <button onclick="eliminarColaborador('${dni}')" style="background: #fee2e2; color: #dc2626; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                    <i class="fa-solid fa-trash"></i> Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // Cargar tablas al iniciar
+        window.onload = actualizarTablas;
+    </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdminControl Pro - Panel de Administración</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        
+        aside { width: 260px; background: white; border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        .logo-area h2 { font-size: 18px; color: var(--primary); }
+        .logo-area p { font-size: 12px; color: var(--text-muted); }
+        .sidebar-btn { background: #fee2e2; color: #dc2626; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; }
+        .sidebar-btn.excel { background: #dcfce7; color: #166534; }
+
+        main { flex: 1; padding: 24px; overflow-y: auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: var(--card-bg); padding: 20px 24px; border-radius: 12px; border: 1px solid var(--border); }
+        .clock { font-size: 16px; font-weight: 600; color: var(--primary); background: #e0e7ff; padding: 8px 16px; border-radius: 20px; }
+
+        .nav-tabs { display: flex; gap: 12px; margin-bottom: 24px; }
+        .tab-btn { background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 10px; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card-box { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 24px; }
+        .card-header-title { padding: 18px 24px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+
+        .form-grid { padding: 24px; display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 700px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+        input { padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+        input:focus { border-color: var(--primary); }
+        .btn-action { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background: #f1f5f9; padding: 14px 20px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+        td { padding: 14px 20px; border-bottom: 1px solid var(--border); }
+        .badge { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="logo-area">
+            <h2>AdminControl Pro</h2>
+            <p>MÓDULO DE GESTIÓN</p>
+        </div>
+        <button class="sidebar-btn excel" onclick="alert('Función de exportar conectada')"><i class="fa-solid fa-file-excel"></i> Exportar a Excel</button>
+        <button class="sidebar-btn" onclick="localStorage.removeItem('registrosAsistencia'); location.reload();"><i class="fa-solid fa-trash"></i> Limpiar Historial</button>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <h1>Panel de Administración y Reportes</h1>
+                <p>Supervise accesos, gestione personal y registre nuevos colaboradores.</p>
+            </div>
+            <div class="clock" id="reloj">00:00:00</div>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="cambiarTab('historial', event)"><i class="fa-solid fa-list-check"></i> Historial</button>
+            <button class="tab-btn" onclick="cambiarTab('empleados', event)"><i class="fa-solid fa-users"></i> Empleados</button>
+            <button class="tab-btn" onclick="cambiarTab('nuevo', event)"><i class="fa-solid fa-user-plus"></i> Registrar Colaborador</button>
+        </div>
+
+        <!-- Historial -->
+        <div id="tab-historial" class="tab-content active">
+            <div class="card-box">
+                <div class="card-header-title"><span>Registro de Ingresos Capturados</span><span class="badge" id="contadorRegistros">0 Registros</span></div>
+                <table>
+                    <thead><tr><th>DNI / CÓDIGO</th><th>COLABORADOR</th><th>FECHA</th><th>HORA</th><th>ESTADO</th></tr></thead>
+                    <tbody id="tablaHistorial"><tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">No hay registros recientes.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empleados -->
+        <div id="tab-empleados" class="tab-content">
+            <div class="card-box">
+                <div class="card-header-title"><span>Colaboradores Registrados</span><span class="badge" id="contadorEmpleados">0 Colaboradores</span></div>
+                <table>
+                    <thead><tr><th>DNI / RUC</th><th>NOMBRE / RAZÓN SOCIAL</th><th>TARIFA (S/.)</th><th>ACCIÓN</th></tr></thead>
+                    <tbody id="tablaEmpleados"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Registrar -->
+        <div id="tab-nuevo" class="tab-content">
+            <div class="card-box">
+                <div class="card-header-title"><span>Registro Rápido de Colaborador</span></div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Número de Documento (8 dígitos DNI o 11 dígitos RUC):</label>
+                        <input type="text" id="nuevoDni" placeholder="Ej. 70123456" maxlength="11" oninput="buscarDniMemoria(this.value)">
+                        <span id="apiStatus" style="font-size: 12px; color: var(--text-muted);">Si el DNI ya fue registrado antes, el nombre aparecerá automáticamente.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre Completo / Razón Social:</label>
+                        <input type="text" id="nuevoNombre" placeholder="Ingrese el nombre del colaborador">
+                    </div>
+                    <div class="form-group">
+                        <label>Tarifa por Hora (S/.):</label>
+                        <input type="number" id="nuevaTarifa" value="10.00" step="0.50">
+                    </div>
+                    <button class="btn-action" onclick="guardarNuevoColaborador()"><i class="fa-solid fa-floppy-disk"></i> Guardar Colaborador</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        setInterval(() => { document.getElementById("reloj").innerText = new Date().toLocaleTimeString(); }, 1000);
+
+        function cambiarTab(tabId, event) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            actualizarTablas();
+        }
+
+        function obtenerEmpleados() { return JSON.parse(localStorage.getItem("empleadosDb")) || {}; }
+        function guardarEmpleadosDb(emp) { localStorage.setItem("empleadosDb", JSON.stringify(emp)); }
+
+        function buscarDniMemoria(dni) {
+            const empleados = obtenerEmpleados();
+            const status = document.getElementById("apiStatus");
+            const inputNombre = document.getElementById("nuevoNombre");
+
+            if (empleados[dni]) {
+                inputNombre.value = empleados[dni].nombre;
+                status.innerText = "¡Encontrado en la base de datos interna!";
+                status.style.color = "var(--success)";
+            } else {
+                if (dni.length === 8 || dni.length === 11) {
+                    status.innerText = "Documento nuevo. Escriba el nombre correspondiente.";
+                    status.style.color = "#d97706";
+                    inputNombre.focus();
+                } else {
+                    status.innerText = "Ingrese el DNI (8 dígitos) o RUC (11 dígitos).";
+                    status.style.color = "var(--text-muted)";
+                }
+            }
+        }
+
+        function guardarNuevoColaborador() {
+            const dni = document.getElementById("nuevoDni").value.trim();
+            const nombre = document.getElementById("nuevoNombre").value.trim();
+            const tarifa = parseFloat(document.getElementById("nuevaTarifa").value) || 10.00;
+
+            if (!dni || !nombre) { 
+                alert("Complete los campos obligatorios."); 
+                return; 
+            }
+
+            let emp = obtenerEmpleados();
+            emp[dni] = { nombre, tarifa };
+            guardarEmpleadosDb(emp);
+
+            alert("¡Colaborador guardado con éxito!");
+            document.getElementById("nuevoDni").value = "";
+            document.getElementById("nuevoNombre").value = "";
+            document.getElementById("apiStatus").innerText = "Si el DNI ya fue registrado antes, el nombre aparecerá automáticamente.";
+            document.getElementById("apiStatus").style.color = "var(--text-muted)";
+            
+            actualizarTablas();
+            document.querySelectorAll('.tab-btn')[1].click();
+        }
+
+        function eliminarColaborador(dni) {
+            if (confirm("¿Eliminar colaborador?")) {
+                let emp = obtenerEmpleados();
+                delete emp[dni];
+                guardarEmpleadosDb(emp);
+                actualizarTablas();
+            }
+        }
+
+        function actualizarTablas() {
+            const regs = JSON.parse(localStorage.getItem("registrosAsistencia")) || [];
+            document.getElementById("contadorRegistros").innerText = regs.length + " Registros";
+            const tbH = document.getElementById("tablaHistorial");
+            tbH.innerHTML = regs.length === 0 ? `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">No hay registros recientes.</td></tr>` : 
+                regs.map(r => `<tr><td style="font-weight:600;color:var(--primary);">${r.dni}</td><td>${r.nombre}</td><td>${r.fecha}</td><td>${r.hora}</td><td><span class="badge">Ingreso</span></td></tr>`).join('');
+
+            const emp = obtenerEmpleados();
+            const keys = Object.keys(emp);
+            document.getElementById("contadorEmpleados").innerText = keys.length + " Colaboradores";
+            const tbE = document.getElementById("tablaEmpleados");
+            tbE.innerHTML = keys.length === 0 ? `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">No hay colaboradores registrados.</td></tr>` :
+                keys.map(d => `<tr><td style="font-weight:600;color:var(--primary);">${d}</td><td>${emp[d].nombre}</td><td>S/. ${Number(emp[d].tarifa).toFixed(2)}</td><td><button onclick="eliminarColaborador('${d}')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;"><i class="fa-solid fa-trash"></i> Eliminar</button></td></tr>`).join('');
+        }
+
+        window.onload = actualizarTablas;
+    </script>
+</body>
+</html>

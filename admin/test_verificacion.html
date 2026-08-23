@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Test de Funcionalidad - Sistema Asistencia</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 30px; background: #f8fafc; color: #1e293b; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        button { padding: 10px 15px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #4338ca; }
+        pre { background: #0f172a; color: #38bdf8; padding: 15px; border-radius: 6px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Panel de Diagnóstico y Testeo</h2>
+        <p>Haz clic en el botón para simular la creación de un colaborador y verificar que el almacenamiento local funcione perfectamente.</p>
+        <br>
+        <button onclick="ejecutarPrueba()">Ejecutar Test de Registro</button>
+    </div>
+
+    <div class="card">
+        <h3>Resultado de la Base de Datos Local (LocalStorage):</h3>
+        <pre id="resultado">Esperando ejecución...</pre>
+    </div>
+
+    <script>
+        function ejecutarPrueba() {
+            // Simular inserción de datos tal como lo hace el submódulo
+            let empleados = JSON.parse(localStorage.getItem("empleadosDb")) || {};
+            
+            const dniPrueba = "48712345";
+            empleados[dniPrueba] = { 
+                nombre: "Colaborador de Prueba (Validación)", 
+                tarifa: 12.50 
+            };
+            
+            localStorage.setItem("empleadosDb", JSON.stringify(empleados));
+            
+            // Leer y mostrar estado actual
+            const datosActuales = localStorage.getItem("empleadosDb");
+            document.getElementById("resultado").innerText = JSON.stringify(JSON.parse(datosActuales), null, 4);
+            
+            alert("¡Test completado con éxito! El almacenamiento local responde correctamente.");
+        }
+
+        // Cargar estado inicial al abrir la página
+        window.onload = function() {
+            const datosActuales = localStorage.getItem("empleadosDb");
+            if (datosActuales) {
+                document.getElementById("resultado").innerText = JSON.stringify(JSON.parse(datosActuales), null, 4);
+            } else {
+                document.getElementById("resultado").innerText = "No hay registros en 'empleadosDb' todavía.";
+            }
+        }
+    </script>
+</body>
+</html>

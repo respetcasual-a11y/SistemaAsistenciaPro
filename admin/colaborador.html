@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submódulo - Crear Colaborador</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card-container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            background: #f1f5f9;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+        }
+
+        .form-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .api-btn {
+            background: #0f172a;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .api-btn:hover {
+            background: #1e293b;
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 15px;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-action:hover {
+            background: var(--primary-hover);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 15px;
+            text-align: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-container">
+        <div class="card-header">
+            <i class="fa-solid fa-user-plus"></i> Submódulo: Crear Colaborador (API RENIEC / SUNAT)
+        </div>
+        <div class="form-body">
+            
+            <!-- Campo DNI / RUC -->
+            <div class="form-group">
+                <label>Número de Documento (8 dígitos DNI / 11 dígitos RUC):</label>
+                <div class="input-group">
+                    <input type="text" id="nuevoDni" placeholder="Ej. 70123456" maxlength="11">
+                    <button type="button" class="api-btn" onclick="consultarApiIdentidad()">
+                        <i class="fa-solid fa-magnifying-glass"></i> Consultar API
+                    </button>
+                </div>
+                <span id="apiStatus" style="font-size: 12px; color: var(--text-muted);">Ingrese el documento y haga clic en Consultar para autocompletar.</span>
+            </div>
+
+            <!-- Nombre Completo / Razón Social -->
+            <div class="form-group">
+                <label>Nombre Completo / Razón Social:</label>
+                <input type="text" id="nuevoNombre" placeholder="Se completará de forma automática">
+            </div>
+
+            <!-- Tarifa por Hora -->
+            <div class="form-group">
+                <label>Tarifa por Hora (S/.):</label>
+                <input type="number" id="nuevaTarifa" value="10.00" step="0.50">
+            </div>
+
+            <!-- Botón Guardar -->
+            <button class="btn-action" onclick="guardarNuevoColaborador()">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar Colaborador en Base de Datos
+            </button>
+
+            <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> Volver al Panel Principal</a>
+        </div>
+    </div>
+
+    <script>
+        function obtenerEmpleados() {
+            return JSON.parse(localStorage.getItem("empleadosDb")) || {};
+        }
+
+        function guardarEmpleadosDb(empleados) {
+            localStorage.setItem("empleadosDb", JSON.stringify(empleados));
+        }
+
+        async function consultarApiIdentidad() {
+            const documento = document.getElementById("nuevoDni").value.trim();
+            const statusLabel = document.getElementById("apiStatus");
+            const inputNombre = document.getElementById("nuevoNombre");
+
+            if (!documento) {
+                alert("Por favor ingrese un número de DNI o RUC.");
+                return;
+            }
+
+            statusLabel.innerText = "Consultando servidores de RENIEC / SUNAT...";
+            statusLabel.style.color = "#d97706";
+
+            try {
+                let url = "";
+                if (documento.length === 8) {
+                    url = `https://api.apis.net.pe/v1/dni?numero=${documento}`;
+                } else if (documento.length === 11) {
+                    url = `https://api.apis.net.pe/v1/ruc?numero=${documento}`;
+                } else {
+                    alert("El documento debe ser un DNI de 8 dígitos o un RUC de 11 dígitos.");
+                    statusLabel.innerText = "Verifique la cantidad de dígitos.";
+                    statusLabel.style.color = "#dc2626";
+                    return;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("No se pudo obtener respuesta del servicio.");
+
+                const data = await response.json();
+
+                if (documento.length === 8) {
+                    const nombreCompleto = data.nombre || `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim();
+                    if (nombreCompleto) {
+                        inputNombre.value = nombreCompleto;
+                        statusLabel.innerText = "¡Datos obtenidos con éxito desde RENIEC!";
+                        statusLabel.style.color = "var(--success)";
+                    } else {
+                        throw new Error("No encontrado");
+                    }
+                } else {
+                    const razonSocial = data.nombre || data.razonSocial;
+                    if (razonSocial) {
+                        inputNombre.value = razonSocial;
+                        statusLabel.innerText = "¡Datos obtenidos con éxito desde SUNAT!";
+                        statusLabel.style.color = "var(--success)";
+                    } else {
+                        throw new Error("No encontrado");
+                    }
+                }
+            } catch (error) {
+                console.warn("API externa con restricción de red o CORS. Habilitando ingreso manual libre.", error);
+                statusLabel.innerText = "Consulta automática no disponible. Escriba el nombre manualmente.";
+                statusLabel.style.color = "#dc2626";
+                inputNombre.focus();
+            }
+        }
+
+        function guardarNuevoColaborador() {
+            const dni = document.getElementById("nuevoDni").value.trim();
+            const nombre = document.getElementById("nuevoNombre").value.trim();
+            const tarifa = parseFloat(document.getElementById("nuevaTarifa").value) || 10.00;
+
+            if (!dni || !nombre) {
+                alert("Complete el documento y asegúrese de que el nombre o razón social esté lleno.");
+                return;
+            }
+
+            let empleados = obtenerEmpleados();
+            empleados[dni] = { nombre: nombre, tarifa: tarifa };
+            guardarEmpleadosDb(empleados);
+
+            alert("¡Colaborador registrado exitosamente!");
+            
+            // Limpiar formulario
+            document.getElementById("nuevoDni").value = "";
+            document.getElementById("nuevoNombre").value = "";
+            document.getElementById("nuevaTarifa").value = "10.00";
+            document.getElementById("apiStatus").innerText = "Ingrese el documento y haga clic en Consultar para autocompletar.";
+            document.getElementById("apiStatus").style.color = "var(--text-muted)";
+        }
+    </script>
+</body>
+</html>

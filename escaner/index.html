@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AccessControl | Terminal de Escaneo</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .scanner-container { background: #1e293b; border: 1px solid #334155; padding: 30px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); width: 100%; max-width: 480px; text-align: center; }
+        .brand { margin-bottom: 20px; }
+        .brand i { font-size: 36px; color: #4f46e5; margin-bottom: 8px; }
+        .brand h1 { font-size: 22px; font-weight: 700; }
+        .brand p { font-size: 13px; color: #94a3b8; }
+        #reader { width: 100% !important; border: none !important; border-radius: 12px; overflow: hidden; }
+        #reader video { border-radius: 12px; object-fit: cover; }
+        .toast-box { margin-top: 20px; background: #064e3b; border: 1px solid #059669; padding: 14px; border-radius: 10px; display: none; }
+        .toast-box h3 { color: #34d399; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .toast-box p { color: #a7f3d0; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="scanner-container">
+        <div class="brand">
+            <i class="fa-solid fa-fingerprint"></i>
+            <h1>Control de Ingreso y Salida</h1>
+            <p>Acerque su código al escáner</p>
+        </div>
+        <div id="reader"></div>
+        <div id="mensajeToast" class="toast-box">
+            <h3 id="toastNombre">¡Registrado!</h3>
+            <p id="toastHora">Procesado exitosamente</p>
+        </div>
+    </div>
+<script>
+    function obtenerEmpleados() {
+        const porDefecto = {
+            "70123456": { nombre: "Carlos Pérez", tarifa: 10 },
+            "70654321": { nombre: "María Gómez", tarifa: 12 },
+            "10203040": { nombre: "Personal Administrador", tarifa: 15 }
+        };
+        return JSON.parse(localStorage.getItem("db_empleados_pro_v2")) || porDefecto;
+    }
+
+    function obtenerRegistros() {
+        return JSON.parse(localStorage.getItem("db_asistencias_pro_v2")) || [];
+    }
+
+    function guardarRegistros(regs) {
+        localStorage.setItem("db_asistencias_pro_v2", JSON.stringify(regs));
+    }
+
+    let ultimoCodigo = "";
+    let tiempoUltimo = 0;
+
+    function registrarTurno(codigo) {
+        if (!codigo) return;
+        codigo = codigo.trim();
+        const ahoraTiempo = new Date().getTime();
+        if (codigo === ultimoCodigo && (ahoraTiempo - tiempoUltimo < 4000)) return;
+        ultimoCodigo = codigo;
+        tiempoUltimo = ahoraTiempo;
+
+        const empleados = obtenerEmpleados();
+        const infoEmp = empleados[codigo];
+        const nombre = infoEmp ? (typeof infoEmp === 'string' ? infoEmp : infoEmp.nombre) : "Colaborador Externo (" + codigo + ")";
+        const tarifa = infoEmp && typeof infoEmp === 'object' ? infoEmp.tarifa : 10;
+
+        let registros = obtenerRegistros();
+        const hoy = new Date().toISOString().split('T')[0];
+        const horaActualStr = new Date().toLocaleTimeString();
+
+        // Buscar si ya tiene un turno abierto hoy sin salida
+        let turnoAbierto = registros.find(r => r.codigo === codigo && r.fecha === hoy && r.estado === "En Turno");
+
+        if (turnoAbierto) {
+            // Registrar Salida
+            turnoAbierto.salida = horaActualStr;
+            turnoAbierto.estado = "Completado";
+
+            // Calcular horas y sueldo
+            let [hIng, mIng, sIng] = turnoAbierto.ingreso.split(':').map(Number);
+            let [hSal, mSal, sSal] = horaActualStr.split(':').map(Number);
+            let minutosTotales = (hSal * 60 + mSal) - (hIng * 60 + mIng);
+            if (minutosTotales < 0) minutosTotales = 0;
+            let horasDecimales = minutosTotales / 60;
+            
+            turnoAbierto.horasAcumuladas = horasDecimales.toFixed(2);
+            turnoAbierto.sueldoDia = (horasDecimales * tarifa).toFixed(2);
+
+            guardarRegistros(registros);
+            mostrarAlerta("✔ Salida Registrada: " + nombre, "Turno cerrado. Acumulado: " + turnoAbierto.horasAcumuladas + " hrs");
+        } else {
+            // Registrar Ingreso
+            const nuevoTurno = {
+                codigo,
+                nombre,
+                fecha: hoy,
+                ingreso: horaActualStr,
+                salida: "--:--:--",
+                horasAcumuladas: "0.00",
+                sueldoDia: "0.00",
+                estado: "En Turno"
+            };
+            registros.unshift(nuevoTurno);
+            guardarRegistros(registros);
+            mostrarAlerta("✔ Ingreso Registrado: " + nombre, "Turno iniciado a las " + horaActualStr);
+        }
+    }
+
+    function mostrarAlerta(titulo, sub) {
+        document.getElementById("toastNombre").innerText = titulo;
+        document.getElementById("toastHora").innerText = sub;
+        const toast = document.getElementById("mensajeToast");
+        toast.style.display = "block";
+        setTimeout(() => { toast.style.display = "none"; }, 4000);
+    }
+
+    let scanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 240 });
+    scanner.render((text) => registrarTurno(text));
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AccessControl | Terminal de Escaneo</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--background); color: var(--text-main); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+
+        .scanner-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+        }
+
+        .brand { margin-bottom: 20px; }
+        .brand i { font-size: 36px; color: var(--primary); margin-bottom: 8px; }
+        .brand h1 { font-size: 22px; font-weight: 700; }
+        .brand p { font-size: 13px; color: var(--text-muted); }
+
+        #reader { width: 100% !important; border: none !important; border-radius: 12px; overflow: hidden; }
+        #reader video { border-radius: 12px; object-fit: cover; }
+
+        .toast-box {
+            margin-top: 20px;
+            background: #064e3b;
+            border: 1px solid #059669;
+            padding: 14px;
+            border-radius: 10px;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .toast-box h3 { color: #34d399; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+        .toast-box p { color: #a7f3d0; font-size: 13px; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanner-container">
+        <div class="brand">
+            <i class="fa-solid fa-fingerprint"></i>
+            <h1>Control de Ingreso</h1>
+            <p>Acerque su código QR o de barras al escáner</p>
+        </div>
+
+        <div id="reader"></div>
+
+        <div id="mensajeToast" class="toast-box">
+            <h3 id="toastNombre">¡Acceso Correcto!</h3>
+            <p id="toastHora">Registrado a las 00:00:00</p>
+        </div>
+    </div>
+
+<script>
+    function obtenerEmpleados() {
+        const porDefecto = {
+            "70123456": "Carlos Pérez",
+            "70654321": "María Gómez",
+            "10203040": "Personal Administrador",
+            "70349858": "Colaborador Autorizado"
+        };
+        return JSON.parse(localStorage.getItem("db_empleados_pro")) || porDefecto;
+    }
+
+    function obtenerRegistros() {
+        return JSON.parse(localStorage.getItem("db_asistencias_pro")) || [];
+    }
+
+    function guardarRegistros(regs) {
+        localStorage.setItem("db_asistencias_pro", JSON.stringify(regs));
+    }
+
+    let ultimoCodigo = "";
+    let tiempoUltimo = 0;
+
+    function registrarAsistencia(codigo) {
+        if (!codigo) return;
+        codigo = codigo.trim();
+
+        const ahoraTiempo = new Date().getTime();
+        if (codigo === ultimoCodigo && (ahoraTiempo - tiempoUltimo < 4000)) return;
+        ultimoCodigo = codigo;
+        tiempoUltimo = ahoraTiempo;
+
+        const empleados = obtenerEmpleados();
+        const nombre = empleados[codigo] || "Colaborador Externo (" + codigo + ")";
+        const f = new Date();
+        const fecha = f.toISOString().split('T')[0];
+        const hora = f.toLocaleTimeString();
+
+        const nuevoItem = { codigo, nombre, fecha, hora, tipo: "Ingreso" };
+        const registros = obtenerRegistros();
+        registros.unshift(nuevoItem);
+        guardarRegistros(registros);
+
+        // Mostrar alerta visual en pantalla
+        document.getElementById("toastNombre").innerText = "✔ " + nombre;
+        document.getElementById("toastHora").innerText = "Registrado exitosamente a las " + hora;
+        const toast = document.getElementById("mensajeToast");
+        toast.style.display = "block";
+        setTimeout(() => { toast.style.display = "none"; }, 4000);
+    }
+
+    function onScanSuccess(decodedText) {
+        registrarAsistencia(decodedText);
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 20, qrbox: 240 });
+    html5QrcodeScanner.render(onScanSuccess);
+</script>
+
+</body>
+</html>

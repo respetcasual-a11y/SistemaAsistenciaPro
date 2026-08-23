@@ -17,6 +17,11 @@
         .brand p { font-size: 13px; color: #94a3b8; }
         #reader { width: 100% !important; border: none !important; border-radius: 12px; overflow: hidden; }
         #reader video { border-radius: 12px; object-fit: cover; }
+        .manual-input-box { margin-top: 15px; display: flex; gap: 8px; }
+        .manual-input-box input { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; outline: none; font-size: 14px; }
+        .manual-input-box input:focus { border-color: #4f46e5; }
+        .manual-input-box button { background: #4f46e5; color: white; border: none; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .manual-input-box button:hover { background: #4338ca; }
         .toast-box { margin-top: 20px; background: #064e3b; border: 1px solid #059669; padding: 14px; border-radius: 10px; display: none; }
         .toast-box h3 { color: #34d399; font-size: 16px; font-weight: 700; margin-bottom: 4px; }
         .toast-box p { color: #a7f3d0; font-size: 13px; }
@@ -27,14 +32,22 @@
         <div class="brand">
             <i class="fa-solid fa-fingerprint"></i>
             <h1>Control de Ingreso y Salida</h1>
-            <p>Acerque su código al escáner</p>
+            <p>Acerque su código al escáner o ingréselo manualmente</p>
         </div>
         <div id="reader"></div>
+        
+        <!-- Campo para ingreso manual -->
+        <div class="manual-input-box">
+            <input type="text" id="inputCodigoManual" placeholder="Ingrese DNI o Código..." onkeypress="if(event.key === 'Enter') procesarManual()">
+            <button onclick="procesarManual()"><i class="fa-solid fa-check"></i> Registrar</button>
+        </div>
+
         <div id="mensajeToast" class="toast-box">
             <h3 id="toastNombre">¡Registrado!</h3>
             <p id="toastHora">Procesado exitosamente</p>
         </div>
     </div>
+
 <script>
     function obtenerEmpleados() {
         const porDefecto = {
@@ -109,6 +122,18 @@
             guardarRegistros(registros);
             mostrarAlerta("✔ Ingreso Registrado: " + nombre, "Turno iniciado a las " + horaActualStr);
         }
+    }
+
+    function procesarManual() {
+        const input = document.getElementById("inputCodigoManual");
+        const codigo = input.value.trim();
+        if (!codigo) {
+            alert("Por favor ingrese un código o DNI.");
+            return;
+        }
+        registrarTurno(codigo);
+        input.value = ""; // Limpiar caja de texto
+        input.focus();
     }
 
     function mostrarAlerta(titulo, sub) {

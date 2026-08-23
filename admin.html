@@ -44,6 +44,7 @@
         label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
         input { padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
         input:focus { border-color: var(--primary); }
+        .api-btn { background: #0f172a; color: white; border: none; padding: 0 20px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
         .btn-action { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
@@ -103,16 +104,19 @@
         <!-- Registrar -->
         <div id="tab-nuevo" class="tab-content">
             <div class="card-box">
-                <div class="card-header-title"><span>Registro Rápido de Colaborador</span></div>
+                <div class="card-header-title"><span>Nuevo Colaborador (Consulta Oficial API SUNAT)</span></div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Número de Documento (8 dígitos DNI o 11 dígitos RUC):</label>
-                        <input type="text" id="nuevoDni" placeholder="Ej. 70123456" maxlength="11" oninput="buscarDniMemoria(this.value)">
-                        <span id="apiStatus" style="font-size: 12px; color: var(--text-muted);">Si el DNI ya fue registrado antes, el nombre aparecerá automáticamente.</span>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="nuevoDni" placeholder="Ej. 70123456" maxlength="11" style="flex: 1;" oninput="verificarAutoconsulta(this.value)">
+                            <button type="button" class="api-btn" onclick="consultarApiOficial()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
+                        </div>
+                        <span id="apiStatus" style="font-size: 12px; color: var(--text-muted);">Digite el documento o haga clic en consultar para traer los datos oficiales.</span>
                     </div>
                     <div class="form-group">
                         <label>Nombre Completo / Razón Social:</label>
-                        <input type="text" id="nuevoNombre" placeholder="Ingrese el nombre del colaborador">
+                        <input type="text" id="nuevoNombre" placeholder="Se completará automáticamente">
                     </div>
                     <div class="form-group">
                         <label>Tarifa por Hora (S/.):</label>
@@ -138,24 +142,70 @@
         function obtenerEmpleados() { return JSON.parse(localStorage.getItem("empleadosDb")) || {}; }
         function guardarEmpleadosDb(emp) { localStorage.setItem("empleadosDb", JSON.stringify(emp)); }
 
-        function buscarDniMemoria(dni) {
-            const empleados = obtenerEmpleados();
-            const status = document.getElementById("apiStatus");
-            const inputNombre = document.getElementById("nuevoNombre");
+        function verificarAutoconsulta(val) {
+            if (val.length === 8 || val.length === 11) {
+                consultarApiOficial();
+            }
+        }
 
-            if (empleados[dni]) {
-                inputNombre.value = empleados[dni].nombre;
-                status.innerText = "¡Encontrado en la base de datos interna!";
-                status.style.color = "var(--success)";
-            } else {
-                if (dni.length === 8 || dni.length === 11) {
-                    status.innerText = "Documento nuevo. Escriba el nombre correspondiente.";
-                    status.style.color = "#d97706";
-                    inputNombre.focus();
+        async function consultarApiOficial() {
+            const doc = document.getElementById("nuevoDni").value.trim();
+            const status = document.getElementById("apiStatus");
+            const nom = document.getElementById("nuevoNombre");
+
+            if (!doc || (doc.length !== 8 && doc.length !== 11)) {
+                alert("Ingrese un DNI de 8 dígitos o RUC de 11 dígitos válido.");
+                return;
+            }
+
+            status.innerText = "Consultando servicios oficiales...";
+            status.style.color = "#d97706";
+
+            try {
+                // Credenciales oficiales SUNAT generadas
+                const clientId = "9646a0f3-b7ed-4c48-8b94-e1a5a717f771";
+                const clientSecret = "s/OWUOqddhG/3pypVHAjgg==";
+
+                // Paso 1: Obtener token de acceso de SUNAT
+                const tokenRes = await fetch("https://api.sunat.gob.pe/v1/oauth/token", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `grant_type=client_credentials&scope=https://api.sunat.gob.pe/v1/contribuyente/contribuyente&client_id=${clientId}&client_secret=${clientSecret}`
+                });
+
+                if (!tokenRes.ok) throw new Error("No se pudo autenticar con SUNAT");
+                const tokenData = await tokenRes.json();
+                const accessToken = tokenData.access_token;
+
+                // Paso 2: Consultar DNI o RUC con el token oficial
+                let urlConsulta = doc.length === 8 ? 
+                    `https://api.sunat.gob.pe/v1/contribuyente/contribuyentes/${doc}` : 
+                    `https://api.sunat.gob.pe/v1/contribuyente/contribuyentes/${doc}`;
+
+                const apiRes = await fetch(urlConsulta, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!apiRes.ok) throw new Error("Documento no encontrado");
+                const data = await apiRes.json();
+
+                nom.value = data.nombre || data.razonSocial || `${data.nombres || ''} ${data.apellidoPaterno || ''} ${data.apellidoMaterno || ''}`.trim();
+
+                if (nom.value) {
+                    status.innerText = "¡Datos obtenidos correctamente de SUNAT!";
+                    status.style.color = "var(--success)";
                 } else {
-                    status.innerText = "Ingrese el DNI (8 dígitos) o RUC (11 dígitos).";
-                    status.style.color = "var(--text-muted)";
+                    throw new Error("Sin datos");
                 }
+            } catch (e) {
+                status.innerText = "Modo de respaldo activo: Ingrese el nombre si es necesario.";
+                status.style.color = "var(--text-muted)";
+                nom.focus();
             }
         }
 
@@ -163,22 +213,15 @@
             const dni = document.getElementById("nuevoDni").value.trim();
             const nombre = document.getElementById("nuevoNombre").value.trim();
             const tarifa = parseFloat(document.getElementById("nuevaTarifa").value) || 10.00;
-
-            if (!dni || !nombre) { 
-                alert("Complete los campos obligatorios."); 
-                return; 
-            }
-
+            if (!dni || !nombre) { alert("Complete los campos obligatorios."); return; }
             let emp = obtenerEmpleados();
             emp[dni] = { nombre, tarifa };
             guardarEmpleadosDb(emp);
-
             alert("¡Colaborador guardado con éxito!");
             document.getElementById("nuevoDni").value = "";
             document.getElementById("nuevoNombre").value = "";
-            document.getElementById("apiStatus").innerText = "Si el DNI ya fue registrado antes, el nombre aparecerá automáticamente.";
+            document.getElementById("apiStatus").innerText = "Digite el documento o haga clic en consultar para traer los datos oficiales.";
             document.getElementById("apiStatus").style.color = "var(--text-muted)";
-            
             actualizarTablas();
             document.querySelectorAll('.tab-btn')[1].click();
         }

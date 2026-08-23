@@ -144,7 +144,7 @@
     </main>
 
     <script>
-        const TOKEN_APISPERU = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleUpiV0ZwYkI2SW5sYzNJZEdNhc3JjVmhBTEJnb0JzY2piMjBpZlEuS2lvSzFKTG00S1hLQTU1czk2MzJjazVfdWdhbFF4bmJ6cGRkVWgyWGs";
+        const TOKEN_APISPERU = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleUpiV0ZwYkI2SW5sYzNJZEdNhc3jVmhBTEJnb0JzY2piMjBpZlEuS2lvSzFKTG00S1hLQTU1czk2MzJjazVfdWdhbFF4bmJ6cGRkVWgyWGs";
 
         setInterval(() => { document.getElementById("reloj").innerText = new Date().toLocaleTimeString(); }, 1000);
 
@@ -192,16 +192,15 @@
                     txtPaterno.value = data.apellidoPaterno || "";
                     txtMaterno.value = data.apellidoMaterno || "";
                 } else {
-                    // Si es RUC, coloca la razón social en nombres
                     txtNombres.value = data.razonSocial || "";
                     txtPaterno.value = "";
                     txtMaterno.value = "";
                 }
 
                 status.innerText = "¡Datos obtenidos exitosamente!";
-                status.style.color = "var(--success)";
+                status.style.color = "#10b981";
             } catch (error) {
-                status.innerText = "Error al consultar. Puede rellenar los campos manualmente.";
+                status.innerText = "Error al consultar. Verifique el número o complete manualmente.";
                 status.style.color = "#dc2626";
             }
         }

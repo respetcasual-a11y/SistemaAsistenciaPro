@@ -105,29 +105,30 @@
         <!-- Registrar -->
         <div id="tab-nuevo" class="tab-content">
             <div class="card-box">
-                <div class="card-header-title"><span>Nuevo Colaborador (Registro Organizado)</span></div>
+                <div class="card-header-title"><span>Nuevo Colaborador (Consulta ApisPeru Oficial)</span></div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Número de Documento (8 dígitos DNI o 11 RUC):</label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="nuevoDni" placeholder="Ej. 70349858" maxlength="11" style="flex: 1;">
+                            <input type="text" id="nuevoDni" placeholder="Ej. 70349858" maxlength="11" style="flex: 1;" onkeypress="if(event.key === 'Enter') consultarApiApisPeru()">
+                            <button type="button" class="api-btn" onclick="consultarApiApisPeru()"><i class="fa-solid fa-magnifying-glass"></i> Consultar</button>
                         </div>
-                        <span style="font-size: 12px; color: var(--text-muted);">Ingrese el documento y complete los campos correspondientes.</span>
+                        <span id="apiStatus" style="font-size: 12px; color: var(--text-muted);">Ingrese el DNI o RUC y pulse Consultar.</span>
                     </div>
 
                     <div class="form-group">
                         <label>Nombres:</label>
-                        <input type="text" id="inputNombres" placeholder="Ej. Juan Carlos">
+                        <input type="text" id="inputNombres" placeholder="Nombres completos">
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>Apellido Paterno:</label>
-                            <input type="text" id="inputPaterno" placeholder="Ej. Pérez">
+                            <input type="text" id="inputPaterno" placeholder="Apellido paterno">
                         </div>
                         <div class="form-group">
                             <label>Apellido Materno:</label>
-                            <input type="text" id="inputMaterno" placeholder="Ej. Gómez">
+                            <input type="text" id="inputMaterno" placeholder="Apellido materno">
                         </div>
                     </div>
 
@@ -143,6 +144,8 @@
     </main>
 
     <script>
+        const TOKEN_APISPERU = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleUpiV0ZwYkI2SW5sYzNJZEdNhc3JjVmhBTEJnb0JzY2piMjBpZlEuS2lvSzFKTG00S1hLQTU1czk2MzJjazVfdWdhbFF4bmJ6cGRkVWgyWGs";
+
         setInterval(() => { document.getElementById("reloj").innerText = new Date().toLocaleTimeString(); }, 1000);
 
         function cambiarTab(tabId, event) {
@@ -156,6 +159,53 @@
         function obtenerEmpleados() { return JSON.parse(localStorage.getItem("empleadosDb")) || {}; }
         function guardarEmpleadosDb(emp) { localStorage.setItem("empleadosDb", JSON.stringify(emp)); }
 
+        async function consultarApiApisPeru() {
+            const dni = document.getElementById("nuevoDni").value.trim();
+            const status = document.getElementById("apiStatus");
+            const txtNombres = document.getElementById("inputNombres");
+            const txtPaterno = document.getElementById("inputPaterno");
+            const txtMaterno = document.getElementById("inputMaterno");
+
+            if (!dni || (dni.length !== 8 && dni.length !== 11)) {
+                alert("Ingrese un DNI válido de 8 dígitos o RUC de 11 dígitos.");
+                return;
+            }
+
+            status.innerText = "Consultando con ApisPeru...";
+            status.style.color = "#d97706";
+
+            try {
+                let url = "";
+                if (dni.length === 8) {
+                    url = `https://dniruc.apisperu.com/api/v1/dni/${dni}?token=${TOKEN_APISPERU}`;
+                } else {
+                    url = `https://dniruc.apisperu.com/api/v1/ruc/${dni}?token=${TOKEN_APISPERU}`;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("No se encontraron datos");
+                
+                const data = await response.json();
+
+                if (dni.length === 8) {
+                    txtNombres.value = data.nombres || "";
+                    txtPaterno.value = data.apellidoPaterno || "";
+                    txtMaterno.value = data.apellidoMaterno || "";
+                } else {
+                    // Si es RUC, coloca la razón social en nombres
+                    txtNombres.value = data.razonSocial || "";
+                    txtPaterno.value = "";
+                    txtMaterno.value = "";
+                }
+
+                status.innerText = "¡Datos obtenidos exitosamente!";
+                status.style.color = "var(--success)";
+            } catch (error) {
+                status.innerText = "Error al consultar. Puede rellenar los campos manualmente.";
+                status.style.color = "#dc2626";
+            }
+        }
+
         function guardarNuevoColaborador() {
             const dni = document.getElementById("nuevoDni").value.trim();
             const nombres = document.getElementById("inputNombres").value.trim();
@@ -163,8 +213,8 @@
             const materno = document.getElementById("inputMaterno").value.trim();
             const tarifa = parseFloat(document.getElementById("nuevaTarifa").value) || 10.00;
 
-            if (!dni || !nombres || !paterno) {
-                alert("Por favor ingrese el DNI, los nombres y el apellido paterno.");
+            if (!dni || !nombres) {
+                alert("Por favor ingrese el DNI y los nombres.");
                 return;
             }
 
@@ -179,6 +229,8 @@
             document.getElementById("inputNombres").value = "";
             document.getElementById("inputPaterno").value = "";
             document.getElementById("inputMaterno").value = "";
+            document.getElementById("apiStatus").innerText = "Ingrese el DNI o RUC y pulse Consultar.";
+            document.getElementById("apiStatus").style.color = "var(--text-muted)";
             actualizarTablas();
             document.querySelectorAll('.tab-btn')[1].click();
         }
